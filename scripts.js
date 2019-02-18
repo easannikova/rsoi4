@@ -76,10 +76,13 @@ let login = document.createElement('input');
 login.style.left = 590 + 'px';
 login.style.top = 90 + 'px';
 login.style.position = 'fixed';
+login.textContent = 'login';
+
 let password = document.createElement('input');
 password.style.left = 590 + 'px';
 password.style.top = 150 + 'px';
 password.style.position = 'fixed';
+password.textContent = 'password';
 
 let h_login = document.createElement('p');
 h_login.textContent = 'Login';
