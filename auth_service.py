@@ -3,7 +3,7 @@ import flask
 from flask import jsonify
 from flask import request
 import json
-from flask.ext.cors import CORS
+from flask_cors import CORS
 import math
 import hashlib
 import datetime
@@ -88,25 +88,24 @@ def check_login():
             resp = "ok"
         else:
             resp = "Wrong!"
+            return jsonify({"Result": None})            
         print (resp)
         token = ''
         secret_key = '\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
-        try:
-            payload = {
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=60*60*30),
-            'iat': datetime.datetime.utcnow(),
-            'sub': login
-            }
-            token = jwt.encode(
-            payload,
-            secret_key,
-            algorithm='HS256'
-            )
-        except Exception as e:
-            print(e)
-
-        print('token', token)
-        return jsonify({"Login result": token})
+        
+        payload = {
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=108000),
+        'iat': datetime.datetime.utcnow(),
+        'sub': login
+        }
+        token = jwt.encode(
+        payload,
+        secret_key,
+        algorithm='HS256'
+        )
+        token_b =  token.decode('utf-8')
+        print('token', token.decode('utf-8'))
+        return jsonify({"Result": token_b})
 
 if __name__ == '__main__':
     app.debug = True  # enables auto reload during development

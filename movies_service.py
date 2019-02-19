@@ -5,14 +5,18 @@ from flask import request
 import json
 from flask_cors import CORS
 import math
+import hashlib
 
-secret_key = '\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
+secret_key = b'\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
 client_id = '5086fa03f5564bc7bc78e1f37409ed1d'
 app = flask.Flask(__name__)
 CORS(app)
 # disables JSON pretty-printing in flask.jsonify
 # app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
+def hash_sk():
+    h = hashlib.sha256(secret_key)
+    return h.hexdigest()
 
 def db_conn():
     con = None
@@ -72,6 +76,11 @@ def page_not_found(e):
     return resp(405, {})
 @app.route('/api/1.0/movies', methods=['GET'])
 def get_movies():
+    print("HEADERS ", request.headers)
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         cur.execute('SELECT * from movies;')
@@ -84,6 +93,11 @@ def get_movies():
 
 @app.route('/api/1.0/movies/<int:movie_id>', methods=['GET'])
 def get_movie(movie_id):
+    print("HEADERS ", request.headers)
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         cur.execute('SELECT * from movies where id = %s;', (str(movie_id)))
@@ -95,6 +109,10 @@ def get_movie(movie_id):
 @app.route('/api/1.0/movies', methods=['POST'])
 def post_movie():
     print('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh')
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         title = request.json['title']
@@ -113,7 +131,10 @@ def post_movie():
 
 @app.route('/api/1.0/movies/<int:movie_id>', methods=['PUT'])
 def put_movie(movie_id):
-
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         title = request.json['title']
@@ -125,6 +146,10 @@ def put_movie(movie_id):
 
 @app.route('/api/1.0/movies/<int:movie_id>', methods=['DELETE'])
 def delete_movie(movie_id):
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         movie_id = str(movie_id)
         print(movie_id)
@@ -139,6 +164,10 @@ def delete_movie(movie_id):
 
 @app.route('/api/1.0/movies/size=<int:size>&index=<int:index>', methods=['GET'])
 def get_movies_pagination(size, index):
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         cur.execute('SELECT * from movies;')

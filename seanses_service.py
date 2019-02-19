@@ -5,8 +5,10 @@ from flask import request
 import json
 from flask_cors import CORS
 import math
+import hashlib
+import datetime
 
-secret_key = '\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
+secret_key = b'\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
 client_id = '83df86a8cdca48f0bc03a7869eca3096'
 app = flask.Flask(__name__)
 CORS(app)
@@ -14,6 +16,10 @@ CORS(app)
 # disables JSON pretty-printing in flask.jsonify
 # app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
+
+def hash_sk():
+    h = hashlib.sha256(secret_key)
+    return h.hexdigest()
 
 def db_conn():
     con = None
@@ -57,6 +63,8 @@ def affected_num_to_code(cnt):
         code = 404
     return code
 
+secret_key = b'\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
+client_id = '5086fa03f5564bc7bc78e1f37409ed1d'
 
 @app.route('/')
 def root():
@@ -80,6 +88,10 @@ def page_not_found(e):
 
 @app.route('/api/1.0/seanses', methods=['GET'])
 def get_seanses():
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         cur.execute('SELECT * from seanses;')
@@ -89,8 +101,47 @@ def get_seanses():
             seanses.append({"id": row[0], "data": row[1], "time": row[2], "hall_number": row[3], "movie_title": row[4]})
         return jsonify({"seanses": seanses})
 
+@app.route('/api/1.0/seanses/auth', methods=['GET'])
+def get_seanse_token(movie_id):
+    #создем токен проверяем логин пароль
+    login = request.json['login']
+    password = request.json['password']
+    if (password == secret_key & login == client_id):
+        token = ''
+        secret_key = '\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
+        
+        payload = {
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=108000),
+        'iat': datetime.datetime.utcnow(),
+        'sub': login
+        }
+        token = jwt.encode(
+        payload,
+        secret_key,
+        algorithm='HS256'
+        )
+        token_b =  token.decode('utf-8')
+        print('token', token.decode('utf-8'))
+        return jsonify({"Result": token_b})
+    else
+        return jsonify({"Result": None})
+
 @app.route('/api/1.0/seanses/<int:movie_id>', methods=['GET'])
 def get_seanse(movie_id):
+    #проверяем валидность токена
+    token = request.headers.get("token")
+    try:
+        payload = jwt.decode(auth_token, secret_key)
+        exp = payload['exp']
+    except jwt.ExpiredSignatureError:
+        return ({"Error": "Access denied!"})
+    except jwt.InvalidTokenError:
+        return ({"Error": "Access denied!"})
+    if (exp < datetime.time / 1000):
+        return ({"Error": "Access denied!"})
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         cur.execute('SELECT * from seanses where id = %s;', (str(movie_id),))
@@ -101,6 +152,10 @@ def get_seanse(movie_id):
 
 @app.route('/api/1.0/seanses', methods=['POST'])
 def post_seanse():
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     (json, errors) = seanse_validate()
     if errors:  # list is not empty
         return resp(400, {"errors": errors})
@@ -124,6 +179,10 @@ def post_seanse():
 
 @app.route('/api/1.0/seanses/<int:seanse_id>', methods=['PUT'])
 def put_seanse(seanse_id):
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     (json, errors) = seanse_validate()
     if errors:  # list is not empty
         return resp(400, {"errors": errors})
@@ -143,6 +202,10 @@ def put_seanse(seanse_id):
 
 @app.route('/api/1.0/seanses/<int:id>', methods=['DELETE'])
 def delete_seanse(id):
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         query = "DELETE FROM seanses WHERE id = %s;" % (str(id))

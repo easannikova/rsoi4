@@ -5,8 +5,9 @@ from flask import request
 import json
 from flask_cors import CORS
 import math
+import hashlib
 
-secret_key = '\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
+secret_key = b'\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
 client_id = 'a21512acc9154a1fa3c413b3c8defc8b'
 app = flask.Flask(__name__)
 CORS(app)
@@ -14,6 +15,10 @@ CORS(app)
 # disables JSON pretty-printing in flask.jsonify
 # app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
+
+def hash_sk():
+    h = hashlib.sha256(secret_key)
+    return h.hexdigest()
 
 def db_conn():
     con = None
@@ -80,6 +85,10 @@ def page_not_found(e):
 
 @app.route('/api/1.0/halls', methods=['GET'])
 def get_halls():
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         cur.execute('SELECT * from halls;')
@@ -91,6 +100,10 @@ def get_halls():
 
 @app.route('/api/1.0/halls/<int:hall_id>', methods=['GET'])
 def get_hall(hall_id):
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         cur.execute('SELECT * from halls where id = %s;', (str(hall_id)))
@@ -101,7 +114,10 @@ def get_hall(hall_id):
 
 @app.route('/api/1.0/halls', methods=['POST'])
 def post_hall():
-    
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         print("dddddddddd")
         cur = db.cursor()
@@ -123,6 +139,10 @@ def post_hall():
 
 @app.route('/api/1.0/halls/<int:hall_id>', methods=['PUT'])
 def put_hall(hall_id):
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     (json, errors) = hall_validate()
     if errors:  # list is not empty
         return resp(400, {"errors": errors})
@@ -139,6 +159,10 @@ def put_hall(hall_id):
 
 @app.route('/api/1.0/halls/<int:hall_id>', methods=['DELETE'])
 def delete_hall(hall_id):
+    secret = request.headers.get("secret")
+    my_secret = hash_sk()
+    if my_secret == secret:
+        return ({"Error": "Access denied!"})
     with db_conn() as db:
         cur = db.cursor()
         query = "DELETE FROM halls WHERE id = %s" % (str(hall_id))
